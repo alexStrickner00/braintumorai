@@ -8,6 +8,9 @@ import javax.faces.bean.SessionScoped;
 import javax.faces.context.FacesContext;
 
 import org.datavec.image.loader.NativeImageLoader;
+import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -34,12 +37,17 @@ public class IndexHandler {
 	
 	private void compute() {
 		try {
-			MultiLayerNetwork model = ModelSerializer.restoreMultiLayerNetwork(this.getClass().getResourceAsStream("model.hdf5"));
-			NativeImageLoader loader = new NativeImageLoader(150, 150, 3);
-			INDArray input = loader.asMatrix(uploadedFile);
-	        ImagePreProcessingScaler preProcessor = new ImagePreProcessingScaler(0, 1);
-	        preProcessor.transform(input);
-			model.output(input, false);
+			MultiLayerNetwork model;
+			try {
+				model = KerasModelImport.importKerasSequentialModelAndWeights(this.getClass().getResourceAsStream("model.hdf5"));
+				NativeImageLoader loader = new NativeImageLoader(150, 150, 3);
+				INDArray input = loader.asMatrix(uploadedFile);
+		        ImagePreProcessingScaler preProcessor = new ImagePreProcessingScaler(0, 1);
+		        preProcessor.transform(input);
+				model.output(input, false);
+			} catch (InvalidKerasConfigurationException | UnsupportedKerasConfigurationException e) {
+				e.printStackTrace();
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
